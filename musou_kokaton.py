@@ -323,6 +323,31 @@ class Score:
         self.image = self.font.render(f"Score: {self.value}", 0, self.color)
         screen.blit(self.image, self.rect)
 
+class Shield(pg.sprite.Sprite):
+    """
+    防御壁に関するクラス
+    """
+    def __init__(self, bird: Bird, life: int):
+        super().__init__()
+        self.life = life
+        self.color = (0, 0, 255)
+        self.image = pg.Surface((20, bird.rect.height*2))
+        pg.draw.rect(self.image, self.color, (0, 0, 20, bird.rect.height*2))
+        self.rect = self.image.get_rect()
+        vx, vy = bird.dire
+        rad = math.degrees(math.atan2(-vy, vx))
+        self.image = pg.transform.rotozoom(self.image, rad, 1)
+        self.image.set_colorkey((0, 0, 0))
+        self.rect.centerx = bird.rect.centerx + bird.rect.width*vx
+        self.rect.centery = bird.rect.centery + bird.rect.height*vy
+        
+
+
+    def update(self):
+        self.life -= 1
+        if self.life < 0:
+            self.kill()
+
 
 class Gravity(pg.sprite.Sprite):
     """
@@ -359,6 +384,7 @@ def main():
     exps = pg.sprite.Group()
     emys = pg.sprite.Group()
     gravities = pg.sprite.Group()
+    shield = pg.sprite.Group()
 
     tmr = 0
     clock = pg.time.Clock()
@@ -387,6 +413,11 @@ def main():
                 score.value -= 20
                 emp = EMP(emys, bombs, screen)
                 beams.add(Beam(bird))
+            if event.type == pg.KEYDOWN and event.key == pg.K_s:
+                if len(shield) == 0:
+                    if score.value >= 50:
+                        shield.add(Shield(bird, 400))
+                        score.value -= 50
         screen.blit(bg_img, [0, 0])
 
         if tmr%200 == 0:  # 200フレームに1回，敵機を出現させる
@@ -434,6 +465,10 @@ def main():
              exps.add(Explosion(emyss, 50)) 
        
                
+        
+        for bomb in pg.sprite.groupcollide(shield, bombs, False, True).keys():
+            exps.add(Explosion(bomb,50))
+
 
         bird.update(key_lst, screen)
         beams.update()
@@ -451,6 +486,8 @@ def main():
         gravities.update()
         gravities.draw(screen)
         life.update(screen)
+        shield.update()
+        shield.draw(screen)
         pg.display.update()
         tmr += 1
         clock.tick(50)
