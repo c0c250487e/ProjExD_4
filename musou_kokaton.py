@@ -37,6 +37,30 @@ def calc_orientation(org: pg.Rect, dst: pg.Rect) -> tuple[float, float]:
     return x_diff/norm, y_diff/norm
 
 
+class Life(pg.sprite.Sprite):
+    """
+    残機数に関するクラス
+    """
+    def __init__(self, num: int):
+        super().__init__()
+        points = [(16*math.sin(t/100)**3 +20,
+                   -(13*math.cos(t/100)-5*math.cos(2*t/100)-2*math.cos(3*t/100)-math.cos(3*t/100)-math.cos(4*t/100)) +20
+                   ) for t in range(0,628) ]
+        print(points)
+        self.li_img = pg.Surface((40, 40))
+        self.li_img.set_colorkey((0, 0, 0))
+        pg.draw.polygon(self.li_img, (255, 0, 0), points)
+        self.num = num
+        
+
+    def update(self, screen: pg.Surface):
+        for i in range(self.num):
+            self.rect = self.li_img.get_rect()
+            self.rect.center = WIDTH-50 - i*50, HEIGHT-50
+            screen.blit(self.li_img, self.rect)
+            
+
+
 class Bird(pg.sprite.Sprite):
     """
     ゲームキャラクター（こうかとん）に関するクラス
@@ -247,6 +271,7 @@ def main():
     screen = pg.display.set_mode((WIDTH, HEIGHT))
     bg_img = pg.image.load(f"fig/pg_bg.jpg")
     score = Score()
+    life = Life(3)
 
     bird = Bird(3, (900, 400))
     bombs = pg.sprite.Group()
@@ -283,11 +308,13 @@ def main():
             score.value += 1  # 1点アップ
 
         for bomb in pg.sprite.spritecollide(bird, bombs, True):  # こうかとんと衝突した爆弾リスト
-            bird.change_img(8, screen)  # こうかとん悲しみエフェクト
-            score.update(screen)
-            pg.display.update()
-            time.sleep(2)
-            return
+            life.num -= 1
+            if life.num == 0:
+                bird.change_img(8, screen)  # こうかとん悲しみエフェクト
+                score.update(screen)
+                pg.display.update()
+                time.sleep(2)
+                return
 
         bird.update(key_lst, screen)
         beams.update()
@@ -299,6 +326,7 @@ def main():
         exps.update()
         exps.draw(screen)
         score.update(screen)
+        life.update(screen)
         pg.display.update()
         tmr += 1
         clock.tick(50)
